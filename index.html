@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dealer Location - Field Report</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 15px;
+      min-height: 100vh;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 20px;
+      margin: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+    }
+    h2 {
+      color: #4a5568;
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 1.8rem;
+      font-weight: 600;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 14px 16px;
+      margin: 10px 0;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .location-btn {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      margin-bottom: 15px;
+    }
+    .search-btn {
+      background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+      margin-bottom: 15px;
+    }
+    .search-section {
+      margin: 15px 0;
+    }
+    #locationSearch {
+      margin-bottom: 10px;
+    }
+    .suggestions {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 5px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .suggestion-item {
+      padding: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f7fafc;
+      transition: background-color 0.2s;
+    }
+    .suggestion-item:hover {
+      background-color: #f7fafc;
+    }
+    .suggestion-item:last-child {
+      border-bottom: none;
+    }
+    .suggestion-title {
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 14px;
+    }
+    .suggestion-address {
+      color: #666;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    #status {
+      text-align: center;
+      font-weight: 500;
+      color: #4a5568;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+    #status strong {
+      color: #2d3748;
+    }
+    #status small {
+      display: block;
+      margin-top: 5px;
+      color: #666;
+    }
+    #mapLink {
+      text-align: center;
+      margin: 15px 0;
+    }
+    #mapLink a {
+      color: #667eea;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 8px 16px;
+      border: 2px solid #667eea;
+      border-radius: 8px;
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+    #mapLink a:hover {
+      background: #667eea;
+      color: white;
+    }
+    #map {
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 15px 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .url-field {
+      background-color: #f7fafc;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    @media (max-width: 480px) {
+      .card {
+        padding: 15px;
+        margin: 0 5px;
+      }
+      h2 {
+        font-size: 1.5rem;
+      }
+      input, select, button {
+        padding: 12px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🏪 Dealer Location</h2>
+    <form id="officerForm">
+      <input type="text" id="dealerName" placeholder="Dealer Name" required>
+      <input type="text" id="address" placeholder="Address" required>
+      <input type="text" id="telephone" placeholder="Telephone" required>
+      <select id="district" required>
+        <option value="">Select District</option>
+        <option>Colombo</option><option>Gampaha</option><option>Kalutara</option>
+        <option>Kandy</option><option>Matale</option><option>Nuwara Eliya</option>
+        <option>Galle</option><option>Matara</option><option>Hambantota</option>
+        <option>Jaffna</option><option>Kilinochchi</option><option>Mannar</option>
+        <option>Mullaitivu</option><option>Vavuniya</option><option>Batticaloa</option>
+        <option>Ampara</option><option>Trincomalee</option><option>Kurunegala</option>
+        <option>Puttalam</option><option>Anuradhapura</option><option>Polonnaruwa</option>
+        <option>Badulla</option><option>Monaragala</option><option>Ratnapura</option>
+        <option>Kegalle</option>
+      </select>
+
+      <button type="button" class="location-btn" onclick="captureLocation()">📍 Get My Location</button>
+      
+      <div class="search-section">
+        <input type="text" id="locationSearch" placeholder="🔍 Search for a location (e.g., Colombo Fort Railway Station)">
+        <button type="button" class="search-btn" onclick="searchLocation()">🔍 Search Location</button>
+        <div id="suggestions" class="suggestions" style="display: none;"></div>
+      </div>
+      
+      <p id="status"></p>
+
+      <input type="text" id="latitude" placeholder="Latitude" required>
+      <input type="text" id="longitude" placeholder="Longitude" required>
+      <input type="text" id="locationUrl" class="url-field" placeholder="Location URL (Auto-filled)" readonly>
+      
+      <button type="button" class="preview-btn" onclick="previewLocation()">🗺️ Preview Location</button>
+
+      <p id="mapLink"></p>
+      <div id="map" style="height:250px; display:none;"></div>
+
+      <input type="file" id="imageInput" accept="image/*" capture="environment">
+      <button type="submit">✅ Submit Dealer Info</button>
+    </form>
+  </div>
+
+  <script>
+    let map, marker;
+    let searchTimeout;
+
+    // Auto-search as user types
+    document.getElementById('locationSearch').addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      
+      if (query.length > 2) {
+        searchTimeout = setTimeout(() => {
+          searchLocationSuggestions(query);
+        }, 500);
+      } else {
+        hideSuggestions();
+      }
+    });
+
+    async function searchLocationSuggestions(query) {
+      try {
+        // Using Nominatim API (OpenStreetMap) for geocoding - it's free and doesn't require API key
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Sri Lanka')}&limit=5&addressdetails=1`
+        );
+        const results = await response.json();
+        
+        if (results && results.length > 0) {
+          showSuggestions(results);
+        } else {
+          hideSuggestions();
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        document.getElementById('status').innerHTML = '⚠️ Search failed. Please check your internet connection.';
+      }
+    }
+
+    function showSuggestions(results) {
+      const suggestionsDiv = document.getElementById('suggestions');
+      suggestionsDiv.innerHTML = '';
+      
+      results.forEach(result => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.innerHTML = `
+          <div class="suggestion-title">${result.display_name.split(',')[0]}</div>
+          <div class="suggestion-address">${result.display_name}</div>
+        `;
+        
+        item.onclick = () => selectLocation(result);
+        suggestionsDiv.appendChild(item);
+      });
+      
+      suggestionsDiv.style.display = 'block';
+    }
+
+    function hideSuggestions() {
+      document.getElementById('suggestions').style.display = 'none';
+    }
+
+    function selectLocation(result) {
+      const lat = parseFloat(result.lat);
+      const lon = parseFloat(result.lon);
+      
+      document.getElementById('latitude').value = lat;
+      document.getElementById('longitude').value = lon;
+      document.getElementById('locationSearch').value = result.display_name.split(',')[0];
+      
+      const gmapUrl = `https://maps.google.com/?q=${lat},${lon}`;
+      document.getElementById('locationUrl').value = gmapUrl;
+      document.getElementById('mapLink').innerHTML =
+        `<a href="${gmapUrl}" target="_blank">🗺️ Open in Google Maps</a>`;
+      
+      showMap(lat, lon);
+      hideSuggestions();
+      
+      document.getElementById('status').innerHTML = `✅ <strong>Location selected:</strong><br><small>${result.display_name}</small>`;
+    }
+
+    async function searchLocation() {
+      const query = document.getElementById('locationSearch').value.trim();
+      
+      if (!query) {
+        alert('Please enter a location to search');
+        return;
+      }
+      
+      document.getElementById('status').innerHTML = '🔍 Searching for location...';
+      
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Sri Lanka')}&limit=1&addressdetails=1`
+        );
+        const results = await response.json();
+        
+        if (results && results.length > 0) {
+          selectLocation(results[0]);
+        } else {
+          document.getElementById('status').innerHTML = `❌ <strong>No results found</strong><br><small>Try a different search term</small>`;
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        document.getElementById('status').innerHTML = '❌ Search failed. Please check your internet connection.';
+      }
+    }
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(event) {
+      const searchSection = document.querySelector('.search-section');
+      if (!searchSection.contains(event.target)) {
+        hideSuggestions();
+      }
+    });
+
+    function captureLocation(){
+      const status = document.getElementById('status');
+      
+      if (!navigator.geolocation) {
+        status.innerHTML = "❌ Geolocation not supported by this browser.";
+        return;
+      }
+      
+      // Check if we're on HTTPS or localhost
+      const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (!isSecure && location.protocol === 'file:') {
+        status.innerHTML = `
+          ⚠️ <strong>Security Warning:</strong><br>
+          Geolocation requires HTTPS or a web server.<br>
+          <small>Try hosting this file on a web server or use localhost.</small>
+        `;
+        return;
+      }
+
+      status.textContent = "📡 Requesting location access...";
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          document.getElementById('latitude').value = lat;
+          document.getElementById('longitude').value = lon;
+
+          const gmapUrl = `https://maps.google.com/?q=${lat},${lon}`;
+          document.getElementById('locationUrl').value = gmapUrl;
+          document.getElementById('mapLink').innerHTML =
+            `<a href="${gmapUrl}" target="_blank">🗺️ Open in Google Maps</a>`;
+
+          showMap(lat, lon);
+          status.innerHTML = `✅ <strong>Location captured successfully!</strong>`;
+        },
+        err => { 
+          let errorMsg = "";
+          switch(err.code) {
+            case err.PERMISSION_DENIED:
+              errorMsg = `
+                ❌ <strong>Location Access Denied</strong><br>
+                <small>Please:</small><br>
+                • Click the location icon in your browser's address bar<br>
+                • Select "Allow" for location access<br>
+                • Refresh the page and try again
+              `;
+              break;
+            case err.POSITION_UNAVAILABLE:
+              errorMsg = "❌ Location information unavailable. Please check your GPS.";
+              break;
+            case err.TIMEOUT:
+              errorMsg = "❌ Location request timed out. Please try again.";
+              break;
+            default:
+              errorMsg = "❌ Unknown error occurred: " + err.message;
+              break;
+          }
+          status.innerHTML = errorMsg;
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 15000,
+          maximumAge: 60000
+        }
+      );
+    }
+
+    function previewLocation(){
+      const lat = parseFloat(document.getElementById('latitude').value);
+      const lon = parseFloat(document.getElementById('longitude').value);
+
+      if (isNaN(lat) || isNaN(lon)) {
+        alert("⚠️ Please enter valid latitude & longitude");
+        return;
+      }
+
+      const gmapUrl = `https://maps.google.com/?q=${lat},${lon}`;
+      document.getElementById('locationUrl').value = gmapUrl;
+      document.getElementById('mapLink').innerHTML =
+        `<a href="${gmapUrl}" target="_blank">🗺️ Open in Google Maps</a>`;
+
+      showMap(lat, lon);
+    }
+
+    function showMap(lat, lon){
+      document.getElementById('map').style.display = "block";
+      if (!map) {
+        map = L.map('map').setView([lat, lon], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        marker = L.marker([lat, lon]).addTo(map);
+      } else {
+        map.setView([lat, lon], 15);
+        marker.setLatLng([lat, lon]);
+      }
+    }
+
+    // Auto-show debug info on load
+    window.addEventListener('load', function() {
+      // Initialize page
+    });
+
+    document.getElementById('officerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const submission = {
+        dealer: document.getElementById('dealerName').value,
+        address: document.getElementById('address').value,
+        telephone: document.getElementById('telephone').value,
+        district: document.getElementById('district').value,
+        latitude: document.getElementById('latitude').value,
+        longitude: document.getElementById('longitude').value,
+        locationUrl: document.getElementById('locationUrl').value,
+        timestamp: new Date().toISOString(),
+        id: 'dealer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+      };
+      
+      // Store in multiple places for better compatibility
+      try {
+        // Primary storage
+        let submissions = JSON.parse(localStorage.getItem('submissions') || '[]');
+        submissions.push(submission);
+        localStorage.setItem('submissions', JSON.stringify(submissions));
+        
+        // Backup storage with different key
+        localStorage.setItem('dealerLocations', JSON.stringify(submissions));
+        localStorage.setItem('lastSubmission', JSON.stringify(submission));
+        
+        alert("✅ Dealer information submitted successfully!");
+        
+      } catch (error) {
+        alert('⚠️ Data saved locally but there might be a storage issue.');
+      }
+      
+      document.getElementById('officerForm').reset();
+      
+      // Clear the URL field and map
+      document.getElementById('locationUrl').value = '';
+      document.getElementById('mapLink').innerHTML = '';
+      if (map) {
+        document.getElementById('map').style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
